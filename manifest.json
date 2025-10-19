@@ -1,0 +1,20 @@
+{
+    "manifest_version": 3,
+    "name": "Network Deepscan",
+    "version": "1.0",
+    "description": "Search through all network requests and responses in DevTools.",
+    "devtools_page": "devtools.html",
+    "permissions": [
+        "storage",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "action": {
+        "default_icon": {
+            "16": "icon.png"
+        }
+    }
+}

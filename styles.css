@@ -1,0 +1,30 @@
+body {
+    font-family: sans-serif;
+    padding: 8px;
+    background: #fafafa;
+}
+
+input {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 6px;
+}
+
+button {
+    padding: 6px 12px;
+    margin-bottom: 10px;
+}
+
+#results {
+    white-space: pre-wrap;
+    overflow: auto;
+    height: 400px;
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 8px;
+}
+
+.match {
+    color: green;
+    font-weight: 600;
+}
