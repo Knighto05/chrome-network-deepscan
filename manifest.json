@@ -5,12 +5,10 @@
     "description": "Search through all network requests and responses in DevTools.",
     "devtools_page": "devtools.html",
     "permissions": [
-        "storage",
+        "activeTab",
+        "tabs",
         "declarativeNetRequest",
         "declarativeNetRequestFeedback"
-    ],
-    "host_permissions": [
-        "<all_urls>"
     ],
     "action": {
         "default_icon": {
