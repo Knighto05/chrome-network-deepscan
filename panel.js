@@ -1,36 +1,148 @@
 const requests = [];
+const MAX_REQUESTS = 500;
+let debounceTimer;
 
 chrome.devtools.network.onRequestFinished.addListener(request => {
-  request.getContent(body => {
-    requests.push({
-      url: request.request.url,
-      method: request.request.method,
-      requestHeaders: request.request.headers,
-      postData: request.request.postData,
-      responseHeaders: request.response.headers,
-      body
-    });
+  request.getContent((body) => {
+    try {
+      const truncatedBody = body && body.length > 5000 ? body.substring(0, 5000) + "..." : body;
+      
+      requests.unshift({
+        id: Date.now() + Math.random(),
+        url: request.request.url,
+        method: request.request.method,
+        status: request.response.status,
+        statusText: request.response.statusText,
+        requestHeaders: request.request.headers || [],
+        postData: request.request.postData,
+        responseHeaders: request.response.headers || [],
+        body: truncatedBody,
+        timestamp: new Date().toLocaleTimeString()
+      });
+
+      if (requests.length > MAX_REQUESTS) {
+        requests.pop();
+      }
+
+      updateRequestCount();
+    } catch (err) {
+      console.error("Error processing request:", err);
+    }
   });
 });
 
-document.getElementById("search").addEventListener("click", () => {
-  const query = document.getElementById("query").value.toLowerCase().trim();
-  const resultsDiv = document.getElementById("results");
-  resultsDiv.textContent = "";
-
-  if (!query) {
-    resultsDiv.textContent = "Please enter a search term.";
-    return;
+function updateRequestCount() {
+  const countEl = document.getElementById("request-count");
+  if (countEl) {
+    countEl.textContent = `Captured: ${requests.length} requests`;
   }
+}
 
-  const matches = requests.filter(r => JSON.stringify(r).toLowerCase().includes(query));
+function escapeHtml(text) {
+  if (!text) return "";
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+function formatJson(str) {
+  try {
+    const obj = JSON.parse(str);
+    return JSON.stringify(obj, null, 2);
+  } catch {
+    return str;
+  }
+}
+
+function renderResults(matches) {
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "";
 
   if (!matches.length) {
-    resultsDiv.textContent = "No matches found.";
+    resultsDiv.innerHTML = '<div class="no-results">No matches found.</div>';
     return;
   }
 
-  resultsDiv.innerHTML = matches
-    .map(m => `<div class="match">✅ ${m.method} ${m.url}</div>`)
-    .join("\n");
+  matches.forEach(m => {
+    const statusClass = m.status >= 400 ? "status-error" : m.status >= 300 ? "status-redirect" : "status-ok";
+    const resultItem = document.createElement("div");
+    resultItem.className = "result-item";
+    
+    resultItem.innerHTML = `
+      <div class="result-header">
+        <span class="method ${m.method.toLowerCase()}">${m.method}</span>
+        <span class="status ${statusClass}">${m.status} ${m.statusText}</span>
+        <span class="url">${escapeHtml(m.url)}</span>
+        <span class="timestamp">${m.timestamp}</span>
+        <button class="expand-btn" data-id="${m.id}">▼</button>
+      </div>
+      <div class="result-details" id="details-${m.id}" style="display: none;">
+        <div class="detail-section">
+          <h4>Request Headers</h4>
+          <pre>${escapeHtml(JSON.stringify(m.requestHeaders, null, 2))}</pre>
+        </div>
+        ${m.postData ? `
+          <div class="detail-section">
+            <h4>Request Body</h4>
+            <pre>${escapeHtml(formatJson(m.postData.text || m.postData))}</pre>
+          </div>
+        ` : ""}
+        <div class="detail-section">
+          <h4>Response Headers</h4>
+          <pre>${escapeHtml(JSON.stringify(m.responseHeaders, null, 2))}</pre>
+        </div>
+        <div class="detail-section">
+          <h4>Response Body</h4>
+          <pre>${escapeHtml(formatJson(m.body || ""))}</pre>
+        </div>
+      </div>
+    `;
+    
+    resultsDiv.appendChild(resultItem);
+
+    resultItem.querySelector(".expand-btn").addEventListener("click", () => {
+      const details = document.getElementById(`details-${m.id}`);
+      const btn = resultItem.querySelector(".expand-btn");
+      const isHidden = details.style.display === "none";
+      details.style.display = isHidden ? "block" : "none";
+      btn.textContent = isHidden ? "▲" : "▼";
+    });
+  });
+}
+
+function performSearch() {
+  const query = document.getElementById("query").value.toLowerCase().trim();
+  const resultsDiv = document.getElementById("results");
+
+  if (!query) {
+    resultsDiv.innerHTML = '<div class="no-results">Please enter a search term.</div>';
+    return;
+  }
+
+  const matches = requests.filter(r => 
+    JSON.stringify(r).toLowerCase().includes(query)
+  );
+
+  renderResults(matches);
+}
+
+document.getElementById("query").addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(performSearch, 300);
 });
+
+document.getElementById("clear").addEventListener("click", () => {
+  if (confirm("Clear all captured requests?")) {
+    requests.length = 0;
+    document.getElementById("results").innerHTML = '<div class="no-results">All requests cleared. Waiting for new requests...</div>';
+    updateRequestCount();
+  }
+});
+
+console.log("Network DeepScan panel loaded");
+updateRequestCount();
