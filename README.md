@@ -19,8 +19,7 @@ A powerful Chrome DevTools extension for capturing, searching, and analyzing net
 
 ## Screenshot
 
-<img width="624" height="559" alt="Screenshot from 2025-10-19 22-03-02" src="https://github.com/user-attachments/assets/b485b985-a8c6-4652-8d9c-305068083ca8" />
-
+<img width="634" height="766" alt="Screenshot from 2025-10-19 23-45-07" src="https://github.com/user-attachments/assets/6b457b04-a3eb-4361-962d-85bdda305662" />
 
 ## Installation
 ### For development:
