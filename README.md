@@ -1,74 +1,141 @@
 # Network DeepScan
 
-A simple Chrome DevTools extension for capturing and searching network requests.
+A powerful Chrome DevTools extension for capturing, searching, and analyzing network requests in real-time.
 
 ## Features
 
-- **Capture Network Requests** - Automatically captures HTTP requests and responses
-- **Search Requests** - Full-text search across all captured request data
-- **View Request Details** - See URLs, methods, headers, and response bodies
+- **Capture All Network Requests** - Automatically captures every HTTP request and response made on the page
+- **Full-Text Search** - Search across URLs, request/response bodies, headers, and status codes (case-insensitive)
+- **Expandable Request Details** - Click any request to view:
+  - Request and response headers
+  - Request body/payload
+  - Response body (with JSON formatting)
+  - HTTP status codes and timestamps
+- **Memory Efficient** - Automatically maintains a rolling buffer of the last 500 requests
+- **Status Code Highlighting** - Color-coded status badges (green for 2xx, yellow for 3xx, red for 4xx/5xx)
+- **Method Badges** - Visual distinction between GET, POST, PUT, DELETE, PATCH, and other HTTP methods
+- **Keyboard Support** - Press Enter to search, or use live search as you type
+- **Clear Function** - Wipe all captured requests with one click
 
 ## Screenshot
 
-<img width="624" height="559" alt="image" src="https://github.com/user-attachments/assets/90e13e55-533b-474d-88bc-3fe189af55fc" />
+<img width="624" height="559" alt="Screenshot from 2025-10-19 22-03-02" src="https://github.com/user-attachments/assets/b485b985-a8c6-4652-8d9c-305068083ca8" />
+
 
 ## Installation
-
+### For development:
 1. Clone or download this repository
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable **Developer mode** (toggle in the top right)
 4. Click **Load unpacked** and select the extension folder
-5. Done!
+5. The extension is now installed!
+
+### For direct use:
+Link to the Chrome listing here when available
 
 ## Usage
 
 1. Open any webpage
 2. Press **F12** to open Chrome DevTools
-3. Click the **Network DeepScan** tab
-4. Make network requests (refresh page, click links, etc.)
-5. Type in the search box to find matching requests
-6. Click **Search** to filter results
+3. Click the **Network DeepScan** tab (next to Elements, Console, etc.)
+4. The extension automatically starts capturing network requests
+5. Type in the search box to filter requests by any criteria
+6. Click the **▼** arrow next to any request to expand and view details
+7. Click **🗑️ Clear** to reset all captured requests
+
+### Search Examples
+
+- Search for an API endpoint: `api/users`
+- Search for a status code: `404`
+- Search for a response value: `"error"`
+- Search for a header: `Authorization`
+- Search for a request method: `POST`
 
 ## File Structure
 
 ```
 network-deepscan/
-├── manifest.json      # Extension config
-├── devtools.js        # DevTools panel setup
-├── panel.html         # UI layout
-├── panel.js           # Search logic
-├── icon.png           # Extension icon
-└── README.md          # This file
+├── manifest.json       # Extension configuration
+├── devtools.js         # DevTools panel initialization
+├── devtools.html       # DevTools page container
+├── panel.html          # Search interface & results display
+├── panel.js            # Search logic and request capture
+├── styles.css          # UI styling
+├── icon.png            # Extension icon (16x16)
+└── README.md           # This file
 ```
 
-## How It Works
+## Files Explained
 
-- `manifest.json` - Tells Chrome how to run the extension
-- `devtools.js` - Creates the "Network DeepScan" tab in DevTools
-- `panel.js` - Listens for network requests and handles searching
-- `panel.html` - Simple search interface with results display
+### `manifest.json`
+Defines the extension's metadata, permissions, and entry points. Uses Manifest V3 for Chrome's latest security standards.
 
-## Requirements
+### `devtools.js`
+Creates the DevTools panel when DevTools opens. Minimal setup that displays the panel alongside other DevTools tabs.
 
-- Chrome browser (Manifest V3 compatible)
-- DevTools must be open to capture requests
+### `panel.js`
+The core of the extension. Handles:
+- Capturing network requests via `chrome.devtools.network.onRequestFinished`
+- Searching across all request data
+- Rendering results with expandable details
+- Memory management (keeps last 500 requests)
+
+### `panel.html` & `styles.css`
+User interface with search box, request list, and expandable details view. Styled for DevTools compatibility.
+
+## Technical Details
+
+- **Manifest Version**: 3 (latest Chrome security standards)
+- **Max Requests Stored**: 500 (configurable in `panel.js`)
+- **Max Body Size**: 5000 characters per response (truncated to save memory)
+- **Search Scope**: Full-text search across all request data (URL, method, headers, bodies, status)
+- **No External Dependencies**: Vanilla JavaScript, no libraries required
 
 ## Limitations
 
-- All requests stored in memory (no persistence)
-- No limit on how many requests are captured
-- Only basic URL and method display in results
-- No expandable details or status code colors
+- Only captures requests made while DevTools is open
+- Cannot intercept CORS-blocked requests (browser limitation)
+- Response bodies larger than 5000 characters are truncated
+- Only works within the DevTools context (cannot monitor background requests)
 
-## Next Steps
+## Tips & Tricks
 
-Consider adding:
-- Clear button to reset requests
-- Request limit to prevent memory issues
-- Expandable request details
-- Status code highlighting
-- Better UI/UX
+- **Search as you type** - The search debounces for smooth performance
+- **Keyboard shortcut** - Press Enter to search or use live filtering
+- **Status codes** - Use color coding to quickly spot errors (red = 4xx/5xx)
+- **Method badges** - Easily identify POST vs GET requests at a glance
+- **Timestamps** - See when each request was made for debugging timing issues
+
+## Troubleshooting
+
+**The panel doesn't appear in DevTools**
+- Make sure DevTools is open (F12)
+- Check that the extension is properly loaded in `chrome://extensions/`
+- Refresh the DevTools panel (Cmd/Ctrl + R)
+
+**No requests are being captured**
+- Make sure DevTools is open before making requests
+- The extension only captures while DevTools is active
+- Try refreshing the page to generate new requests
+
+**Search is slow**
+- This is normal with many requests (500+)
+- Click the **🗑️ Clear** button to start fresh
+- Close and reopen DevTools if performance degrades
+
+## Future Enhancements
+
+- Export requests as HAR, CSV, or JSON
+- Filter by request type or status code
+- Copy individual requests as cURL commands
+- Request/response size analysis
+- Performance timeline visualization
+- Persistence across DevTools sessions
 
 ## License
 
-MIT License
+This project is open source and available under the MIT License.
+
+## Support
+
+Found a bug or have a feature request? Feel free to create an issue or submit a pull request!
