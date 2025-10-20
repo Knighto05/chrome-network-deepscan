@@ -1,6 +1,36 @@
 const requests = [];
 const MAX_REQUESTS = 500;
 let debounceTimer;
+let currentTabId = null;
+let settings = {
+  clearOnReload: true
+};
+
+// Load settings from localStorage
+try {
+  const savedSettings = localStorage.getItem('networkDeepscanSettings');
+  if (savedSettings) {
+    settings = { ...settings, ...JSON.parse(savedSettings) };
+  }
+} catch (e) {
+  console.log("Could not load settings:", e);
+}
+
+// Get the current tab ID
+chrome.devtools.inspectedWindow.tabId;
+currentTabId = chrome.devtools.inspectedWindow.tabId;
+
+// Listen for clear message from background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "CLEAR_REQUESTS" && request.tabId === currentTabId) {
+    if (settings.clearOnReload) {
+      requests.length = 0;
+      document.getElementById("results").innerHTML = '<div class="no-results">Page reloading... Waiting for new requests.</div>';
+      updateRequestCount();
+      console.log("Requests cleared due to page reload");
+    }
+  }
+});
 
 chrome.devtools.network.onRequestFinished.addListener(request => {
   request.getContent((body) => {
@@ -50,6 +80,14 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+function highlightMatch(text, query) {
+  if (!text || !query) return escapeHtml(text);
+  
+  const escapedText = escapeHtml(text);
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\')})`, 'gi');
+  return escapedText.replace(regex, '<mark>$1</mark>');
+}
+
 function formatJson(str) {
   try {
     const obj = JSON.parse(str);
@@ -61,6 +99,7 @@ function formatJson(str) {
 
 function renderResults(matches) {
   const resultsDiv = document.getElementById("results");
+  const query = document.getElementById("query").value.trim();
   resultsDiv.innerHTML = "";
 
   if (!matches.length) {
@@ -73,32 +112,38 @@ function renderResults(matches) {
     const resultItem = document.createElement("div");
     resultItem.className = "result-item";
     
+    const highlightedUrl = highlightMatch(m.url, query);
+    const highlightedHeaders = highlightMatch(JSON.stringify(m.requestHeaders, null, 2), query);
+    const highlightedPostData = m.postData ? highlightMatch(formatJson(m.postData.text || m.postData), query) : "";
+    const highlightedResponseHeaders = highlightMatch(JSON.stringify(m.responseHeaders, null, 2), query);
+    const highlightedBody = highlightMatch(formatJson(m.body || ""), query);
+    
     resultItem.innerHTML = `
       <div class="result-header">
         <span class="method ${m.method.toLowerCase()}">${m.method}</span>
         <span class="status ${statusClass}">${m.status} ${m.statusText}</span>
-        <span class="url">${escapeHtml(m.url)}</span>
+        <span class="url">${highlightedUrl}</span>
         <span class="timestamp">${m.timestamp}</span>
         <button class="expand-btn" data-id="${m.id}">▼</button>
       </div>
       <div class="result-details" id="details-${m.id}" style="display: none;">
         <div class="detail-section">
-          <h4>Request Headers</h4>
-          <pre>${escapeHtml(JSON.stringify(m.requestHeaders, null, 2))}</pre>
+          <h4 class="section-toggle" data-section-id="req-headers-${m.id}">▼ Request Headers</h4>
+          <pre id="req-headers-${m.id}">${highlightedHeaders}</pre>
         </div>
         ${m.postData ? `
           <div class="detail-section">
-            <h4>Request Body</h4>
-            <pre>${escapeHtml(formatJson(m.postData.text || m.postData))}</pre>
+            <h4 class="section-toggle" data-section-id="req-body-${m.id}">▼ Request Body</h4>
+            <pre id="req-body-${m.id}">${highlightedPostData}</pre>
           </div>
         ` : ""}
         <div class="detail-section">
-          <h4>Response Headers</h4>
-          <pre>${escapeHtml(JSON.stringify(m.responseHeaders, null, 2))}</pre>
+          <h4 class="section-toggle" data-section-id="res-headers-${m.id}">▼ Response Headers</h4>
+          <pre id="res-headers-${m.id}">${highlightedResponseHeaders}</pre>
         </div>
         <div class="detail-section">
-          <h4>Response Body</h4>
-          <pre>${escapeHtml(formatJson(m.body || ""))}</pre>
+          <h4 class="section-toggle" data-section-id="res-body-${m.id}">▼ Response Body</h4>
+          <pre id="res-body-${m.id}">${highlightedBody}</pre>
         </div>
       </div>
     `;
@@ -111,6 +156,17 @@ function renderResults(matches) {
       const isHidden = details.style.display === "none";
       details.style.display = isHidden ? "block" : "none";
       btn.textContent = isHidden ? "▲" : "▼";
+    });
+
+    // Add section toggles for individual headers/body sections
+    resultItem.querySelectorAll(".section-toggle").forEach(toggle => {
+      toggle.addEventListener("click", () => {
+        const sectionId = toggle.dataset.sectionId;
+        const preElement = document.getElementById(sectionId);
+        const isHidden = preElement.style.display === "none";
+        preElement.style.display = isHidden ? "block" : "none";
+        toggle.textContent = (isHidden ? "▼" : "▶") + " " + toggle.textContent.slice(2);
+      });
     });
   });
 }
@@ -141,6 +197,30 @@ document.getElementById("clear").addEventListener("click", () => {
     requests.length = 0;
     document.getElementById("results").innerHTML = '<div class="no-results">All requests cleared. Waiting for new requests...</div>';
     updateRequestCount();
+  }
+});
+
+// Settings modal functionality
+document.getElementById("settings-btn").addEventListener("click", () => {
+  document.getElementById("settings-modal").style.display = "flex";
+  document.getElementById("clear-on-reload").checked = settings.clearOnReload;
+});
+
+document.getElementById("settings-close").addEventListener("click", () => {
+  document.getElementById("settings-modal").style.display = "none";
+});
+
+document.getElementById("settings-save").addEventListener("click", () => {
+  settings.clearOnReload = document.getElementById("clear-on-reload").checked;
+  localStorage.setItem('networkDeepscanSettings', JSON.stringify(settings));
+  document.getElementById("settings-modal").style.display = "none";
+  console.log("Settings saved:", settings);
+});
+
+// Close modal when clicking outside
+document.getElementById("settings-modal").addEventListener("click", (e) => {
+  if (e.target.id === "settings-modal") {
+    document.getElementById("settings-modal").style.display = "none";
   }
 });
 
