@@ -191,6 +191,14 @@ button:active {
   transition: display 0.2s;
 }
 
+mark {
+  background-color: #ffeb3b;
+  color: #000;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
 pre {
   background: white;
   border: 1px solid #ddd;

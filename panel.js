@@ -50,6 +50,15 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+function highlightMatch(text, query) {
+  if (!text || !query) return escapeHtml(text);
+  
+  const escapedText = escapeHtml(text);
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\')})`, 'gi');
+
+  return escapedText.replace(regex, '<mark>$1</mark>');
+}
+
 function formatJson(str) {
   try {
     const obj = JSON.parse(str);
@@ -61,6 +70,7 @@ function formatJson(str) {
 
 function renderResults(matches) {
   const resultsDiv = document.getElementById("results");
+  const query = document.getElementById("query").value.trim();
   resultsDiv.innerHTML = "";
 
   if (!matches.length) {
@@ -73,32 +83,38 @@ function renderResults(matches) {
     const resultItem = document.createElement("div");
     resultItem.className = "result-item";
     
+    const highlightedUrl = highlightMatch(m.url, query);
+    const highlightedHeaders = highlightMatch(JSON.stringify(m.requestHeaders, null, 2), query);
+    const highlightedPostData = m.postData ? highlightMatch(formatJson(m.postData.text || m.postData), query) : "";
+    const highlightedResponseHeaders = highlightMatch(JSON.stringify(m.responseHeaders, null, 2), query);
+    const highlightedBody = highlightMatch(formatJson(m.body || ""), query);
+    
     resultItem.innerHTML = `
       <div class="result-header">
         <span class="method ${m.method.toLowerCase()}">${m.method}</span>
         <span class="status ${statusClass}">${m.status} ${m.statusText}</span>
-        <span class="url">${escapeHtml(m.url)}</span>
+        <span class="url">${highlightedUrl}</span>
         <span class="timestamp">${m.timestamp}</span>
         <button class="expand-btn" data-id="${m.id}">▼</button>
       </div>
       <div class="result-details" id="details-${m.id}" style="display: none;">
         <div class="detail-section">
           <h4 class="section-toggle" data-section-id="req-headers-${m.id}">▼ Request Headers</h4>
-          <pre id="req-headers-${m.id}">${escapeHtml(JSON.stringify(m.requestHeaders, null, 2))}</pre>
+          <pre id="req-headers-${m.id}">${highlightedHeaders}</pre>
         </div>
         ${m.postData ? `
           <div class="detail-section">
             <h4 class="section-toggle" data-section-id="req-body-${m.id}">▼ Request Body</h4>
-            <pre id="req-body-${m.id}">${escapeHtml(formatJson(m.postData.text || m.postData))}</pre>
+            <pre id="req-body-${m.id}">${highlightedPostData}</pre>
           </div>
         ` : ""}
         <div class="detail-section">
           <h4 class="section-toggle" data-section-id="res-headers-${m.id}">▼ Response Headers</h4>
-          <pre id="res-headers-${m.id}">${escapeHtml(JSON.stringify(m.responseHeaders, null, 2))}</pre>
+          <pre id="res-headers-${m.id}">${highlightedResponseHeaders}</pre>
         </div>
         <div class="detail-section">
           <h4 class="section-toggle" data-section-id="res-body-${m.id}">▼ Response Body</h4>
-          <pre id="res-body-${m.id}">${escapeHtml(formatJson(m.body || ""))}</pre>
+          <pre id="res-body-${m.id}">${highlightedBody}</pre>
         </div>
       </div>
     `;
