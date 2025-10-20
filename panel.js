@@ -83,22 +83,22 @@ function renderResults(matches) {
       </div>
       <div class="result-details" id="details-${m.id}" style="display: none;">
         <div class="detail-section">
-          <h4>Request Headers</h4>
-          <pre>${escapeHtml(JSON.stringify(m.requestHeaders, null, 2))}</pre>
+          <h4 class="section-toggle" data-section-id="req-headers-${m.id}">▼ Request Headers</h4>
+          <pre id="req-headers-${m.id}">${escapeHtml(JSON.stringify(m.requestHeaders, null, 2))}</pre>
         </div>
         ${m.postData ? `
           <div class="detail-section">
-            <h4>Request Body</h4>
-            <pre>${escapeHtml(formatJson(m.postData.text || m.postData))}</pre>
+            <h4 class="section-toggle" data-section-id="req-body-${m.id}">▼ Request Body</h4>
+            <pre id="req-body-${m.id}">${escapeHtml(formatJson(m.postData.text || m.postData))}</pre>
           </div>
         ` : ""}
         <div class="detail-section">
-          <h4>Response Headers</h4>
-          <pre>${escapeHtml(JSON.stringify(m.responseHeaders, null, 2))}</pre>
+          <h4 class="section-toggle" data-section-id="res-headers-${m.id}">▼ Response Headers</h4>
+          <pre id="res-headers-${m.id}">${escapeHtml(JSON.stringify(m.responseHeaders, null, 2))}</pre>
         </div>
         <div class="detail-section">
-          <h4>Response Body</h4>
-          <pre>${escapeHtml(formatJson(m.body || ""))}</pre>
+          <h4 class="section-toggle" data-section-id="res-body-${m.id}">▼ Response Body</h4>
+          <pre id="res-body-${m.id}">${escapeHtml(formatJson(m.body || ""))}</pre>
         </div>
       </div>
     `;
@@ -111,6 +111,17 @@ function renderResults(matches) {
       const isHidden = details.style.display === "none";
       details.style.display = isHidden ? "block" : "none";
       btn.textContent = isHidden ? "▲" : "▼";
+    });
+
+    // Add section toggles for individual headers/body sections
+    resultItem.querySelectorAll(".section-toggle").forEach(toggle => {
+      toggle.addEventListener("click", () => {
+        const sectionId = toggle.dataset.sectionId;
+        const preElement = document.getElementById(sectionId);
+        const isHidden = preElement.style.display === "none";
+        preElement.style.display = isHidden ? "block" : "none";
+        toggle.textContent = (isHidden ? "▼" : "▶") + " " + toggle.textContent.slice(2);
+      });
     });
   });
 }
