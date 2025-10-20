@@ -9,8 +9,26 @@
       <input id="query" placeholder="Search for a value (case-insensitive)">
       <span id="request-count">Captured: 0 requests</span>
       <button id="clear">🚫 Clear</button>
+      <button id="settings-btn" class="settings-btn">⚙️</button>
     </div>
     <div id="results">No requests yet...</div>
+
+     <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+      <div class="modal-content">
+        <h3>Settings</h3>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="clear-on-reload" checked>
+            Clear requests on page reload
+          </label>
+        </div>
+        <div class="modal-buttons">
+          <button id="settings-save">Save</button>
+          <button id="settings-close">Cancel</button>
+        </div>
+      </div>
+    </div>
     <script src="panel.js"></script>
   </body>
 </html>

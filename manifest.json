@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Network Deepscan",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Search through all network requests and responses in DevTools.",
     "devtools_page": "devtools.html",
     "permissions": [
@@ -10,6 +10,9 @@
         "declarativeNetRequest",
         "declarativeNetRequestFeedback"
     ],
+    "background": {
+        "service_worker": "background.js"
+    },
     "action": {
         "default_icon": {
             "16": "icon.png"

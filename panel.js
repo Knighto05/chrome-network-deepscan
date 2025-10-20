@@ -1,6 +1,36 @@
 const requests = [];
 const MAX_REQUESTS = 500;
 let debounceTimer;
+let currentTabId = null;
+let settings = {
+  clearOnReload: true
+};
+
+// Load settings from localStorage
+try {
+  const savedSettings = localStorage.getItem('networkDeepscanSettings');
+  if (savedSettings) {
+    settings = { ...settings, ...JSON.parse(savedSettings) };
+  }
+} catch (e) {
+  console.log("Could not load settings:", e);
+}
+
+// Get the current tab ID
+chrome.devtools.inspectedWindow.tabId;
+currentTabId = chrome.devtools.inspectedWindow.tabId;
+
+// Listen for clear message from background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "CLEAR_REQUESTS" && request.tabId === currentTabId) {
+    if (settings.clearOnReload) {
+      requests.length = 0;
+      document.getElementById("results").innerHTML = '<div class="no-results">Page reloading... Waiting for new requests.</div>';
+      updateRequestCount();
+      console.log("Requests cleared due to page reload");
+    }
+  }
+});
 
 chrome.devtools.network.onRequestFinished.addListener(request => {
   request.getContent((body) => {
@@ -55,7 +85,6 @@ function highlightMatch(text, query) {
   
   const escapedText = escapeHtml(text);
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\')})`, 'gi');
-
   return escapedText.replace(regex, '<mark>$1</mark>');
 }
 
@@ -168,6 +197,30 @@ document.getElementById("clear").addEventListener("click", () => {
     requests.length = 0;
     document.getElementById("results").innerHTML = '<div class="no-results">All requests cleared. Waiting for new requests...</div>';
     updateRequestCount();
+  }
+});
+
+// Settings modal functionality
+document.getElementById("settings-btn").addEventListener("click", () => {
+  document.getElementById("settings-modal").style.display = "flex";
+  document.getElementById("clear-on-reload").checked = settings.clearOnReload;
+});
+
+document.getElementById("settings-close").addEventListener("click", () => {
+  document.getElementById("settings-modal").style.display = "none";
+});
+
+document.getElementById("settings-save").addEventListener("click", () => {
+  settings.clearOnReload = document.getElementById("clear-on-reload").checked;
+  localStorage.setItem('networkDeepscanSettings', JSON.stringify(settings));
+  document.getElementById("settings-modal").style.display = "none";
+  console.log("Settings saved:", settings);
+});
+
+// Close modal when clicking outside
+document.getElementById("settings-modal").addEventListener("click", (e) => {
+  if (e.target.id === "settings-modal") {
+    document.getElementById("settings-modal").style.display = "none";
   }
 });
 
