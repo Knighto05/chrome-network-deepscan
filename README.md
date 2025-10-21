@@ -30,7 +30,8 @@ A powerful Chrome DevTools extension for capturing, searching, and analyzing net
 5. The extension is now installed!
 
 ### For direct use:
-Link to the Chrome listing here when available
+You can install the Chrome extension here:
+[Link to the Chrome listing here when available](https://chromewebstore.google.com/detail/network-deepscan/onaiepgjeapepbnhidfjgdjodgcpblnj)
 
 ## Usage
 
